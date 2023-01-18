@@ -39,6 +39,9 @@ class Webhook extends Action_Base {
 				'separator' => 'before',
 				'description' => esc_html__( 'Enter the integration URL (like Zapier) that will receive the form\'s submitted data.', 'elementor-pro' ),
 				'render_type' => 'none',
+				'dynamic' => [
+					'active' => true,
+				],
 			]
 		);
 
@@ -100,7 +103,8 @@ class Webhook extends Action_Base {
 		/**
 		 * Elementor form webhook response.
 		 *
-		 * Fires when the webhook response is retrieved.
+		 * Fires when the webhook response is retrieved by Elementor forms. This hook
+		 * allows developers to add functionality after recieving webhook responses.
 		 *
 		 * @since 1.0.0
 		 *
@@ -110,7 +114,7 @@ class Webhook extends Action_Base {
 		do_action( 'elementor_pro/forms/webhooks/response', $response, $record );
 
 		if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
-			throw new \Exception( esc_html__( 'Webhook Error', 'elementor-pro' ) );
+			throw new \Exception( 'Webhook error.' );
 		}
 	}
 }

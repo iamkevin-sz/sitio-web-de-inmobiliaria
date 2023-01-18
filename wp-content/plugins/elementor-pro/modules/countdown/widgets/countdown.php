@@ -65,6 +65,9 @@ class Countdown extends Base_Widget {
 				'condition' => [
 					'countdown_type' => 'due_date',
 				],
+				'dynamic' => [
+					'active' => true,
+				],
 			]
 		);
 
@@ -78,6 +81,9 @@ class Countdown extends Base_Widget {
 				'condition' => [
 					'countdown_type' => 'evergreen',
 				],
+				'dynamic' => [
+					'active' => true,
+				],
 			]
 		);
 
@@ -90,6 +96,9 @@ class Countdown extends Base_Widget {
 				'placeholder' => esc_html__( 'Minutes', 'elementor-pro' ),
 				'condition' => [
 					'countdown_type' => 'evergreen',
+				],
+				'dynamic' => [
+					'active' => true,
 				],
 			]
 		);
@@ -187,6 +196,9 @@ class Countdown extends Base_Widget {
 					'custom_labels!' => '',
 					'show_days' => 'yes',
 				],
+				'dynamic' => [
+					'active' => true,
+				],
 			]
 		);
 
@@ -201,6 +213,9 @@ class Countdown extends Base_Widget {
 					'show_labels!' => '',
 					'custom_labels!' => '',
 					'show_hours' => 'yes',
+				],
+				'dynamic' => [
+					'active' => true,
 				],
 			]
 		);
@@ -217,6 +232,9 @@ class Countdown extends Base_Widget {
 					'custom_labels!' => '',
 					'show_minutes' => 'yes',
 				],
+				'dynamic' => [
+					'active' => true,
+				],
 			]
 		);
 
@@ -231,6 +249,9 @@ class Countdown extends Base_Widget {
 					'show_labels!' => '',
 					'custom_labels!' => '',
 					'show_seconds' => 'yes',
+				],
+				'dynamic' => [
+					'active' => true,
 				],
 			]
 		);
@@ -353,7 +374,7 @@ class Countdown extends Base_Widget {
 			[
 				'label' => esc_html__( 'Border Radius', 'elementor-pro' ),
 				'type' => Controls_Manager::DIMENSIONS,
-				'size_units' => [ 'px', '%' ],
+				'size_units' => [ 'px', '%', 'em' ],
 				'selectors' => [
 					'{{WRAPPER}} .elementor-countdown-item' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
 				],
@@ -643,9 +664,10 @@ class Countdown extends Base_Widget {
 		if ( 'evergreen' === $instance['countdown_type'] ) {
 			$this->add_render_attribute( 'div', 'data-evergreen-interval', $this->get_evergreen_interval( $instance ) );
 		} else {
-			// Handle timezone ( we need to set GMT time )
-			$gmt = get_gmt_from_date( $due_date . ':00' );
-			$due_date = strtotime( $gmt );
+			// Normalize the date format to `Y-m-d H:i:s` for BC (the original code doesn't include `:s`
+			// while new tags return the proper format).
+			$due_date = gmdate( 'Y-m-d H:i:s', strtotime( $due_date ) );
+			$due_date = strtotime( $due_date );
 		}
 
 		$actions = false;

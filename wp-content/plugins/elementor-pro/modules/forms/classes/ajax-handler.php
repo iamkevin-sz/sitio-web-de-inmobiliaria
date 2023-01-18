@@ -1,6 +1,7 @@
 <?php
 namespace ElementorPro\Modules\Forms\Classes;
 
+use ElementorPro\Core\Utils;
 use ElementorPro\Modules\Forms\Module;
 use ElementorPro\Plugin;
 
@@ -172,6 +173,15 @@ class Ajax_Handler {
 
 			$errors = array_merge( $this->messages['error'], $this->messages['admin_error'] );
 
+			/**
+			 * After form actions run.
+			 *
+			 * Fires after Elementor forms run actions. This hook allows
+			 * developers to add functionality after certain actions run.
+			 *
+			 * @param Action_Base     $action    An instance of form action.
+			 * @param \Exception|null $exception An instance of the exception.
+			 */
 			do_action( 'elementor_pro/forms/actions/after_run', $action, $exception );
 		}
 
@@ -188,7 +198,8 @@ class Ajax_Handler {
 		/**
 		 * New Elementor form record.
 		 *
-		 * Fires before a new form record is send by ajax.
+		 * Fires before a new form record is sent by ajax. This hook allows
+		 * developers to add functionality before a new form record is sent.
 		 *
 		 * @since 1.0.0
 		 *
@@ -256,8 +267,10 @@ class Ajax_Handler {
 			$this->add_error_message( $this->get_default_message( self::INVALID_FORM, $this->current_form['settings'] ) );
 		}
 
+		$post_id = Utils::_unstable_get_super_global_value( $_POST, 'post_id' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
 		$error_msg = implode( '<br>', $this->messages['error'] );
-		if ( current_user_can( 'edit_post', $_POST['post_id'] ) && ! empty( $this->messages['admin_error'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( current_user_can( 'edit_post', $post_id ) && ! empty( $this->messages['admin_error'] ) ) {
 			$this->add_admin_error_message( esc_html__( 'This Message is not visible for site visitors.', 'elementor-pro' ) );
 			$error_msg .= '<div class="elementor-forms-admin-errors">' . implode( '<br>', $this->messages['admin_error'] ) . '</div>';
 		}

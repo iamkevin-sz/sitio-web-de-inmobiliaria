@@ -52,6 +52,12 @@ abstract class Payment_Button extends Widget_Button {
 	// Render custom controls after product type.
 	protected function after_product_type() { }
 
+	// Render custom controls test toggle control.
+	protected function after_custom_messages_toggle() { }
+
+	// Edit error massage placeholders for stripe widget
+	protected function update_error_massages() { }
+
 	// Return an array of supported currencies.
 	protected function get_currencies() {
 		return [
@@ -106,6 +112,7 @@ abstract class Payment_Button extends Widget_Button {
 
 	// Product details section.
 	protected function register_product_controls() {
+
 		$this->add_control(
 			'type',
 			[
@@ -310,7 +317,7 @@ abstract class Payment_Button extends Widget_Button {
 				'label' => esc_html__( 'Redirect After Success', 'elementor-pro' ),
 				'type' => Controls_Manager::URL,
 				'options' => false,
-				'placeholder' => esc_html__( 'Paste URL or type', 'elementor-pro' ),
+				'placeholder' => esc_html__( 'Choose a page or add a URL', 'elementor-pro' ),
 				'dynamic' => [
 					'active' => true,
 				],
@@ -336,7 +343,11 @@ abstract class Payment_Button extends Widget_Button {
 			'open_in_new_window',
 			[
 				'type' => Controls_Manager::SWITCHER,
-				'label' => sprintf( esc_html__( 'Open %s In New Tab', 'elementor-pro' ), $this->get_merchant_name() ),
+				'label' => sprintf(
+					/* translators: %s: Merchant name. */
+					esc_html__( 'Open %s In New Tab', 'elementor-pro' ),
+					$this->get_merchant_name()
+				),
 				'default' => 'yes',
 				'label_off' => esc_html__( 'No', 'elementor-pro' ),
 				'label_on' => esc_html__( 'Yes', 'elementor-pro' ),
@@ -352,6 +363,8 @@ abstract class Payment_Button extends Widget_Button {
 			]
 		);
 
+		$this->after_custom_messages_toggle();
+
 		$error_messages = $this->get_default_error_messages();
 
 		$this->add_control(
@@ -365,13 +378,20 @@ abstract class Payment_Button extends Widget_Button {
 				'condition' => [
 					'custom_messages!' => '',
 				],
+				'dynamic' => [
+					'active' => true,
+				],
 			]
 		);
 
 		$this->add_control(
 			'error_message_' . self::ERROR_MESSAGE_PAYMENT_METHOD,
 			[
-				'label' => sprintf( esc_html__( '%s Not Connected', 'elementor-pro' ), $this->get_merchant_name() ),
+				'label' => sprintf(
+					/* translators: %s: Merchant name. */
+					esc_html__( '%s Not Connected', 'elementor-pro' ),
+					$this->get_merchant_name()
+				),
 				'type' => Controls_Manager::TEXT,
 				'default' => $error_messages[ self::ERROR_MESSAGE_PAYMENT_METHOD ],
 				'placeholder' => $error_messages[ self::ERROR_MESSAGE_PAYMENT_METHOD ],
@@ -379,8 +399,13 @@ abstract class Payment_Button extends Widget_Button {
 				'condition' => [
 					'custom_messages!' => '',
 				],
+				'dynamic' => [
+					'active' => true,
+				],
 			]
 		);
+
+		$this->update_error_massages();
 
 		$this->end_controls_section();
 	}
@@ -395,13 +420,6 @@ abstract class Payment_Button extends Widget_Button {
 
 		$this->remove_control( 'size' );
 
-		$this->update_control( 'selected_icon', [
-			'default' => [
-				'value' => 'fab fa-paypal',
-				'library' => 'fa-brands',
-			],
-		] );
-
 		$this->update_control( 'text', [
 			'default' => 'Buy Now',
 		] );
@@ -410,9 +428,15 @@ abstract class Payment_Button extends Widget_Button {
 			'default' => '#FFF',
 		] );
 
-		$this->update_control( 'background_color', [
-			'default' => '#032E82',
-		] );
+		$this->update_control(
+			'icon_align',
+			[
+				'options' => [
+					'left' => esc_html__( 'Before Text', 'elementor-pro' ),
+					'right' => esc_html__( 'After Text', 'elementor-pro' ),
+				],
+			]
+		);
 	}
 
 	// Add typography settings for custom messages.
@@ -450,7 +474,11 @@ abstract class Payment_Button extends Widget_Button {
 		$this->add_control(
 			'message_color_' . self::ERROR_MESSAGE_PAYMENT_METHOD,
 			[
-				'label' => sprintf( esc_html__( '%s Not Connected Color', 'elementor-pro' ), $this->get_merchant_name() ),
+				'label' => sprintf(
+					/* translators: %s: Merchant name. */
+					esc_html__( '%s Not Connected Color', 'elementor-pro' ),
+					$this->get_merchant_name()
+				),
 				'type' => Controls_Manager::COLOR,
 				'selectors' => [
 					'{{WRAPPER}} .elementor-message.elementor-error-message-' . self::ERROR_MESSAGE_PAYMENT_METHOD => 'color: {{COLOR}};',
