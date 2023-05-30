@@ -1,7 +1,7 @@
 <?php
 /**
  * Class: Jet_Switcher_Widget
- * Name: Jet Switcher
+ * Name: Switcher
  * Slug: jet-switcher
  */
 
@@ -37,7 +37,7 @@ class Jet_Switcher_Widget extends Jet_Tabs_Base {
 	}
 
 	public function get_categories() {
-		return array( 'cherry' );
+		return array( 'jet-tabs' );
 	}
 
 	protected function register_controls() {

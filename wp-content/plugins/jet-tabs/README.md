@@ -6,6 +6,23 @@ The plugin makes it simple to create a template with Elementor and add it to the
 
 # ChangeLog
 
+## [2.1.21](https://github.com/ZemezLab/jet-tabs/releases/tag/2.1.21) - 23.02.2023
+* Fixed: minor issues
+
+## [2.1.20](https://github.com/ZemezLab/jet-tabs/releases/tag/2.1.20) - 21.11.2022
+* Updated: JetDashboard Module to v2.0.9
+* Fixed: widgets Accessibility
+* Fixed: minor issues
+
+## [2.1.19](https://github.com/ZemezLab/jet-tabs/releases/tag/2.1.19) - 15.08.2022
+* Fixed: Tabs widget content height issue
+
+## [2.1.18](https://github.com/ZemezLab/jet-tabs/releases/tag/2.1.18) - 04.08.2022
+* Added: [Crocoblock/suggestions#5454](https://github.com/Crocoblock/suggestions/issues/5454)
+* Added: [Crocoblock/suggestions#5289](https://github.com/Crocoblock/suggestions/issues/5289)
+* Fixed: сompatibility with Elementor 3.7
+* Fixed: minor issues
+
 ## [2.1.17](https://github.com/ZemezLab/jet-tabs/releases/tag/2.1.17) - 14.04.2022
 * Added: [Crocoblock/suggestions#3941](https://github.com/Crocoblock/suggestions/issues/3941)
 * Fixed: wpml compatibility

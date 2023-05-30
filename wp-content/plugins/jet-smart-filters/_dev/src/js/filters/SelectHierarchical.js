@@ -112,21 +112,30 @@ export default class SelectHierarchical {
 			});
 		}
 
-		this.ajaxRequest({ values, depth });
+		this.ajaxRequest({
+			values,
+			depth,
+			args: filter.layoutOptions || false
+		});
 	}
 
 	updateHierarchyLevels(filters) {
 		const values = [];
+		let args = null;
 
 		filters.forEach(filter => {
-			if (filter.dataValue)
+			if (filter.dataValue) {
+				if (args === null)
+					args = filter.layoutOptions || false;
+
 				values.push({
 					value: filter.data,
 					tax: filter.queryVar,
 				});
+			}
 		});
 
-		this.ajaxRequest({ values }, () => {
+		this.ajaxRequest({ values, args }, () => {
 			filters.forEach(filter => {
 				filter.setData(filter.data);
 			});
@@ -156,7 +165,8 @@ export default class SelectHierarchical {
 		const {
 			values,
 			depth = false,
-			indexer = this.indexer
+			indexer = this.indexer,
+			args = false
 		} = data;
 
 		const requestData = {
@@ -169,6 +179,8 @@ export default class SelectHierarchical {
 			requestData.depth = depth;
 		if (indexer)
 			requestData.indexer = indexer;
+		if (args)
+			requestData.args = args;
 
 		$.ajax({
 			url: JetSmartFilterSettings.ajaxurl,

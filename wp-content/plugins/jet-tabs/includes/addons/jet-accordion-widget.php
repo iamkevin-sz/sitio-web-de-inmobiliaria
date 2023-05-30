@@ -1,7 +1,7 @@
 <?php
 /**
  * Class: Jet_Accordion_Widget
- * Name: Accordion Widget
+ * Name: Classic Accordion
  * Slug: jet-accordion
  */
 namespace Elementor;
@@ -37,7 +37,7 @@ class Jet_Accordion_Widget extends Jet_Tabs_Base {
 	}
 
 	public function get_categories() {
-		return array( 'cherry' );
+		return array( 'jet-tabs' );
 	}
 
 	protected function register_controls() {
@@ -60,6 +60,8 @@ class Jet_Accordion_Widget extends Jet_Tabs_Base {
 				'label' => esc_html__( 'Items', 'jet-tabs' ),
 			)
 		);
+
+		do_action( 'jet-engine-query-gateway/control', $this, 'toggles' );
 
 		$repeater = new Repeater();
 
@@ -267,12 +269,33 @@ class Jet_Accordion_Widget extends Jet_Tabs_Base {
 			'content_scrolling',
 			array(
 				'label'        => esc_html__( 'Scrolling to the Content', 'jet-tabs' ),
-				'description'  => esc_html__( 'Scrolling to the Content after Switching Tab Control on Mobile Devices', 'jet-tabs' ),
+				'description'  => esc_html__( 'Scrolling to the Content after Switching Tab Control', 'jet-tabs' ),
 				'type'         => Controls_Manager::SWITCHER,
 				'label_on'     => esc_html__( 'On', 'jet-tabs' ),
 				'label_off'    => esc_html__( 'Off', 'jet-tabs' ),
 				'return_value' => 'yes',
 				'default'      => 'false',
+			)
+		);
+
+		$this->add_control(
+			'content_scrolling_offset',
+			array(
+				'label' => esc_html__( 'Scrolling offset (px)', 'jet-tabs' ),
+				'type'  => Controls_Manager::SLIDER,
+				'range' => array(
+					'px' => array(
+						'min' => 0,
+						'max' => 100,
+					),
+				),
+				'default' => array(
+					'unit' => 'px',
+					'size' => 0,
+				),
+				'condition' => array(
+					'content_scrolling' => 'yes'
+				)
 			)
 		);
 
@@ -933,9 +956,10 @@ class Jet_Accordion_Widget extends Jet_Tabs_Base {
 		$ajax_template = filter_var( $this->get_settings( 'ajax_template' ), FILTER_VALIDATE_BOOLEAN );
 
 		$settings = array(
-			'collapsible'     => filter_var( $this->get_settings( 'collapsible' ), FILTER_VALIDATE_BOOLEAN ),
-			'ajaxTemplate'    => $ajax_template,
-			'switchScrolling' => filter_var( $this->get_settings( 'content_scrolling' ), FILTER_VALIDATE_BOOLEAN )
+			'collapsible'           => filter_var( $this->get_settings( 'collapsible' ), FILTER_VALIDATE_BOOLEAN ),
+			'ajaxTemplate'          => $ajax_template,
+			'switchScrolling'       => filter_var( $this->get_settings( 'content_scrolling' ), FILTER_VALIDATE_BOOLEAN ),
+			'switchScrollingOffset' => !empty( $this->get_settings_for_display( 'content_scrolling_offset' ) ) ? $this->get_settings_for_display( 'content_scrolling_offset' ) : 0
 		);
 
 		$this->add_render_attribute( 'instance', array(
@@ -962,6 +986,9 @@ class Jet_Accordion_Widget extends Jet_Tabs_Base {
 			<div class="jet-accordion__inner">
 				<?php
 					foreach ( $toggles as $index => $item ) {
+
+						do_action( 'jet-engine-query-gateway/do-item', $item );
+						
 						$toggle_count = $index + 1;
 
 						$toggle_setting_key         = $this->get_repeater_setting_key( 'jet_toggle', 'toggles', $index );
@@ -980,6 +1007,7 @@ class Jet_Accordion_Widget extends Jet_Tabs_Base {
 							),
 							'data-toggle'      => $toggle_count,
 							'role'             => 'tab',
+							'tabindex'         => 0,
 							'aria-controls'    => 'jet-toggle-content-' . $id_int . $toggle_count,
 							'aria-expanded'    => $is_item_active ? 'true' : 'false',
 							'data-template-id' => ! empty( $item['item_template_id'] ) ? $item['item_template_id'] : 'false',
@@ -1007,7 +1035,6 @@ class Jet_Accordion_Widget extends Jet_Tabs_Base {
 							),
 							'data-toggle'      => $toggle_count,
 							'role'             => 'tabpanel',
-							'aria-hidden'      => $is_item_active ? 'false' : 'true',
 							'data-template-id' => ! empty( $item['item_template_id'] ) ? $item['item_template_id'] : 'false',
 						) );
 
@@ -1084,7 +1111,10 @@ class Jet_Accordion_Widget extends Jet_Tabs_Base {
 								),
 							);
 						}
-					}?>
+					}
+
+					do_action( 'jet-engine-query-gateway/reset-item' );
+					?>
 					<?php if ( 'yes' === $faq_schema ) : ?>
 						<script type="application/ld+json"><?php echo wp_json_encode( $json ); ?></script>
 					<?php endif?>

@@ -9,6 +9,7 @@ $this->add_render_attribute( 'main-container', 'class', array(
 	'jet-image-accordion-' . $settings['instance_orientation'] . '-orientation',
 	'jet-image-accordion-' . $settings['anim_ease'] . '-ease',
 ) );
+$this->add_render_attribute( 'main-container', 'role', 'tablist' );
 
 $this->add_render_attribute( 'main-container', 'data-settings', $this->generate_setting_json() );
 

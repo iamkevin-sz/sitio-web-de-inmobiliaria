@@ -1,6 +1,7 @@
 import AdditionalFilters from 'modules/AdditionalFilters';
 import CustomProvider from 'modules/CustomProvider';
 import Indexer from 'modules/Indexer';
+import TabIndex from 'modules/TabIndex';
 import eventBus from 'includes/event-bus';
 import request from 'includes/request';
 import preloader from 'includes/preloader';
@@ -12,12 +13,13 @@ import {
 	setNesting,
 	getNesting,
 	getUrlParams,
-	removeAllDefaultUrlParams,
-	mergeData
+	getThirdPartyUrlParams,
+	mergeData,
+	applyAliases,
 } from 'includes/utility';
 
 export default class FilterGroup {
-	urlPrefix = 'jet-smart-filters';
+	urlPrefix = 'jsf';
 	activeItemsExceptions = ['sorting', 'pagination'];
 
 	constructor(provider, queryId, filters, queryData = false) {
@@ -33,10 +35,11 @@ export default class FilterGroup {
 		this.additionalFilters = new AdditionalFilters(this);
 		this.customProvider = new CustomProvider(this);
 		this.initIndexer();
+		this.initTabIndex();
 
 		this.urlType = getNesting(JetSmartFilterSettings, 'misc', 'url_type') || 'plain';
-		this.baseUrl = window.location.pathname.replace(/jsf\/.*?$/, '');
-		this.baseUrlParams = removeAllDefaultUrlParams(window.location.search);
+		this.baseUrl = getNesting(JetSmartFilterSettings, 'baseurl');
+		this.baseUrlParams = getThirdPartyUrlParams();
 
 		// Event subscriptions
 		eventBus.subscribe('fiter/change', filter => {
@@ -101,11 +104,11 @@ export default class FilterGroup {
 		this.apply(applyType);
 	}
 
-	paginationСhangeHandler(applyType, topOffset = 0) {
+	paginationСhangeHandler(applyType, topOffset = false) {
 		this.apply(applyType);
 
 		// scroll to provider
-		if (applyType !== 'reload')
+		if (applyType !== 'reload' && (topOffset || topOffset === 0))
 			$('html, body').stop().animate({ scrollTop: this.$provider.offset().top - topOffset }, 500);
 	}
 
@@ -135,8 +138,12 @@ export default class FilterGroup {
 
 	doReload() {
 		const url = this.getUrl(true);
+		let newLocation = this.baseUrl;
 
-		document.location = this.baseUrl + url || this.baseUrl;
+		if (url)
+			newLocation = applyAliases(this.baseUrl + url);
+
+		document.location = newLocation;
 	}
 
 	doAjax() {
@@ -204,7 +211,7 @@ export default class FilterGroup {
 
 		// update provider data
 		if (response.is_data) {
-			this.$provider.trigger('jet-filter-data-updated', response);
+			this.$provider.trigger( 'jet-filter-data-updated', [ response, this ] );
 		}
 
 		// update fragments
@@ -235,6 +242,12 @@ export default class FilterGroup {
 		if ('insert' === this.providerSelectorData.action) {
 			this.$provider.html(result);
 		} else {
+
+			// update the provider selector if for some reason it doesn't actually exist on the page
+			if (!$(document).find(this.$provider).length) {
+				this.$provider = $(this.providerSelector);
+			}
+
 			this.$provider.replaceWith(result);
 			this.$provider = $(this.providerSelector);
 		}
@@ -265,6 +278,13 @@ export default class FilterGroup {
 			});
 		}
 
+		if ( window.JetPlugins ) {
+			window.JetPlugins.init( this.$provider );
+			if ( this.$provider.closest( '[data-is-block*="/"]' ).length ) {
+				window.JetPlugins.initBlock( this.$provider.closest( '[data-is-block*="/"]' )[0], true );
+			}
+		}
+
 		// emit rendered event
 		eventBus.publish('provider/content-rendered', this.provider, this.$provider);
 		// for backward compatibility with other plugins
@@ -273,19 +293,23 @@ export default class FilterGroup {
 
 	setFiltersData(data = this.currentQuery) {
 		this.filters.forEach(filter => {
-			if (filter.isHierarchy && (filter.singleTax || data['hc']))
+			//if (filter.isHierarchy && (filter.singleTax || data['hc']))
+			if (filter.isHierarchy || filter.disabled)
 				return;
 
 			const key = filter.queryKey,
 				value = data[key];
 
-			if (value)
+			if (value && filter.setData)
+				filter.setData(value);
+
+			/* if (value)
 				if (!filter.isHierarchy) {
 					if (filter.setData)
 						filter.setData(value);
 				} else {
 					filter.dataValue = value;
-				}
+				} */
 		});
 
 		this.emitActiveItems();
@@ -332,9 +356,9 @@ export default class FilterGroup {
 			const url = this.getUrl();
 
 			if (url)
-				history.replaceState(null, null, this.baseUrl + url);
+				history.replaceState(null, null, applyAliases(this.baseUrl + url));
 		} else {
-			history.replaceState(null, null, this.baseUrl);
+			history.replaceState(null, null, this.baseUrl + this.baseUrlParams);
 		}
 	}
 
@@ -457,7 +481,7 @@ export default class FilterGroup {
 
 		switch (this.urlType) {
 			case 'permalink':
-				url = 'jsf/' + providerName + '/';
+				url = this.urlPrefix + '/' + providerName + '/';
 
 				// replace _s on search
 				if ('_s' in urlData) {
@@ -494,9 +518,9 @@ export default class FilterGroup {
 
 			default:
 				if (this.baseUrlParams) {
-					url = this.baseUrlParams + '&jsf=' + providerName;
+					url = this.baseUrlParams + '&' + this.urlPrefix + '=' + providerName;
 				} else {
-					url = '?jsf=' + providerName;
+					url = '?' + this.urlPrefix + '=' + providerName;
 				}
 
 				for (const queryTypeKey in urlData) {
@@ -539,6 +563,18 @@ export default class FilterGroup {
 		});
 	}
 
+	initTabIndex() {
+		const use_tabindex = getNesting(JetSmartFilterSettings, 'plugin_settings', 'use_tabindex');
+
+		if (use_tabindex !== 'true')
+			return;
+
+		this.filters.forEach(filter => {
+			// Init TabIndex Class
+			new TabIndex(filter);
+		});
+	}
+
 	// emitters
 	emitActiveItems() {
 		eventBus.publish('activeItems/change', this.activeItems, this.provider, this.queryId);
@@ -564,9 +600,6 @@ export default class FilterGroup {
 		const query = {};
 
 		this.filters.forEach(filter => {
-			if (filter.disabled)
-				return;
-
 			const data = filter.data,
 				key = filter.queryKey;
 
@@ -577,7 +610,7 @@ export default class FilterGroup {
 				query[key] = mergeData(query[key], data, 'operator_AND');
 			} else {
 				if (filter.isHierarchy && filter.hierarchicalСhain)
-					query['hc'] = filter.hierarchicalСhain;
+					query['hc_' + filter.queryVar] = filter.hierarchicalСhain;
 
 				query[key] = data;
 			}
@@ -606,9 +639,20 @@ export default class FilterGroup {
 	}
 
 	get activeItems() {
-		return this.filters.filter(filter => {
-			return filter.data && filter.reset && !filter.disabled && !this.activeItemsExceptions.includes(filter.name);
+		const activeItems = [];
+
+		this.filters.forEach(filter => {
+			if (
+				!filter.data || !filter.reset
+				|| this.activeItemsExceptions.includes(filter.name)
+				|| activeItems.some(activeItem => filter.filterId === activeItem.filterId)
+			)
+				return;
+
+			activeItems.push(filter);
 		});
+
+		return activeItems;
 	}
 
 	get hierarchyFilters() {

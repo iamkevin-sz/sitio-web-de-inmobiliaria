@@ -19,7 +19,8 @@
 				'jet-hamburger-panel.default' : JetBlocks.hamburgerPanel,
 				'jet-blocks-cart.default': JetBlocks.wooCard,
 				'jet-register.default' : JetBlocks.userRegistration,
-				'jet-reset.default' : JetBlocks.userResetPassword
+				'jet-reset.default' : JetBlocks.userResetPassword,
+				'jet-login.default' : JetBlocks.userLogin
 			};
 
 			$.each( widgets, function( widget, callback ) {
@@ -35,6 +36,7 @@
 			} );
 
 			elementorFrontend.hooks.addAction( 'frontend/element_ready/section', JetBlocks.setStickySection );
+			elementorFrontend.hooks.addAction( 'frontend/element_ready/container', JetBlocks.setStickySection );
 
 			$( JetBlocks.stickySection );
 		},
@@ -138,7 +140,7 @@
 		userRegistration: function( $scope ) {
 
 			var $target            = $( '.jet-register', $scope ),
-				pwStrongValidation = $('.pw-validation', $target),
+				pwStrongValidation = $( '.pw-validation', $target ),
 				submitBtn          = $( 'button.jet-register__submit', $scope );
 
 			if ( pwStrongValidation.length ) {
@@ -146,12 +148,15 @@
 			}
 
 			JetBlocks.togglePasswordVisibility( $scope );
+
+			JetBlocksTools.googleRecaptcha( $target );
 		},
 
 		userResetPassword: function( $scope ) {
 
 			var $target            = $( '.jet-reset', $scope ),
-				pwStrongValidation = $('.pw-validation', $target),
+				$form              = $( '.jet-reset__form', $scope ),
+				pwStrongValidation = $( '.pw-validation', $target ),
 				submitBtn          = $( 'button.jet-reset__button', $scope );
 
 			if ( pwStrongValidation.length ) {
@@ -159,6 +164,15 @@
 			}
 
 			JetBlocks.togglePasswordVisibility( $scope );
+
+			JetBlocksTools.googleRecaptcha( $form );
+		},
+
+		userLogin: function( $scope ) {
+
+			var $target = $( '#loginform', $scope );
+
+			JetBlocksTools.googleRecaptcha( $target );
 		},
 
 		navMenu: function( $scope ) {
@@ -169,12 +183,19 @@
 
 			$scope.data( 'initialized', true );
 
-			var hoverClass        = 'jet-nav-hover',
-				hoverOutClass     = 'jet-nav-hover-out',
-				mobileActiveClass = 'jet-mobile-menu-active',
-				currentDeviceMode = elementorFrontend.getCurrentDeviceMode(),
-				excludedDevices   = ['widescreen', 'desktop', 'laptop'],
-				excludeCheck      = $.inArray( currentDeviceMode, excludedDevices);
+			var hoverClass          = 'jet-nav-hover',
+				hoverOutClass       = 'jet-nav-hover-out',
+				mobileActiveClass   = 'jet-mobile-menu-active',
+				currentDeviceMode   = elementorFrontend.getCurrentDeviceMode(),
+				excludedDevices     = [ 'widescreen', 'desktop', 'laptop' ],
+				availableDevices    = [ 'tablet_extra', 'tablet', 'mobile_extra', 'mobile' ],
+				excludeCheck        = $.inArray( currentDeviceMode, excludedDevices ),
+				mobileLayoutDevice  = undefined != $( '.jet-nav-wrap', $scope ).data( 'mobile-trigger-device' ) ? $( '.jet-nav-wrap', $scope ).data( 'mobile-trigger-device' ) : '',
+				deviceStartIndex    = null;
+
+			if ( '' != mobileLayoutDevice ) {
+				deviceStartIndex = availableDevices.indexOf( mobileLayoutDevice );
+			}
 
 			$scope.find( '.jet-nav:not(.jet-nav--vertical-sub-bottom)' ).hoverIntent({
 				over: function() {
@@ -414,7 +435,7 @@
 
 			// START Mobile Layout: Full-width
 			var initMobileFullWidthCss = false;
-			
+
 			setFullWidthMenuPosition();
 			$( window ).on( 'resize.jetMobileNavMenu', setFullWidthMenuPosition );
 
@@ -424,11 +445,12 @@
 				if ( 'full-width' !== mobileLayout ) {
 					return;
 				}
-				
-				var $menu = $scope.find( '.jet-nav' ),
-					currentDeviceMode = elementorFrontend.getCurrentDeviceMode();
 
-				if ( 'mobile' !== currentDeviceMode ) {
+				var $menu = $scope.find( '.jet-nav' ),
+					currentDeviceMode = elementorFrontend.getCurrentDeviceMode(),
+					currentDeviceIndex = availableDevices.indexOf( currentDeviceMode );
+
+				if ( currentDeviceIndex < deviceStartIndex ) {
 					if ( initMobileFullWidthCss ) {
 						$menu.css( { 'left': '' } );
 						initMobileFullWidthCss = false;
@@ -597,9 +619,21 @@
 				$panelContent = $( '.jet-hamburger-panel__content', $scope),
 				scrollOffset,
 				timer,
+				timer2,
 				editMode      = Boolean( elementorFrontend.isEditMode() ),
 				$html         = $( 'html' ),
-				settings      = $panel.data( 'settings' ) || {};
+				settings      = $panel.data( 'settings' ) || {},
+				eContainer    = $scope.parents( '.e-container' );
+
+			function fixElementorContainerZIndex( e, open = true ) {
+				if ( open ) {
+					eContainer.css( 'z-index', 999 );
+					e.parent( '.e-container' ).css( 'z-index', 999 );
+				} else if ( false === open ) {
+					eContainer.css( 'z-index', '' );
+					e.parent( '.e-container' ).css( 'z-index', '' );
+				}
+			}
 
 			if ( 'ontouchend' in window || 'ontouchstart' in window ) {
 				$toggleButton.on( 'touchstart', function( event ) {
@@ -615,8 +649,13 @@
 						clearTimeout( timer );
 					}
 
+					if ( timer2 ) {
+						clearTimeout( timer2 );
+					}
+
 					if ( ! $panel.hasClass( 'open-state' ) ) {
 						timer = setTimeout( function() {
+							fixElementorContainerZIndex( $( this ) );
 							$panel.addClass( 'open-state' );
 						}, 10 );
 						$html.addClass( 'jet-hamburger-panel-visible' );
@@ -628,13 +667,21 @@
 					} else {
 						$panel.removeClass( 'open-state' );
 						$html.removeClass( 'jet-hamburger-panel-visible' );
+						timer2 = setTimeout( function() {
+							fixElementorContainerZIndex( $( this ), false );
+						}, 400 );
 					}
 				} );
 
 			} else {
 				$toggleButton.on( 'click', function( event ) {
 
+					if ( timer ) {
+						clearTimeout( timer );
+					}
+
 					if ( ! $panel.hasClass( 'open-state' ) ) {
+						fixElementorContainerZIndex( $( this ) );
 						$panel.addClass( 'open-state' );
 						$html.addClass( 'jet-hamburger-panel-visible' );
 						JetBlocks.initAnimationsHandlers( $inner );
@@ -645,11 +692,41 @@
 					} else {
 						$panel.removeClass( 'open-state' );
 						$html.removeClass( 'jet-hamburger-panel-visible' );
+						timer = setTimeout( function() {
+							fixElementorContainerZIndex( $( this ), false );
+						}, 400 );
+					}
+				} );
+
+				$toggleButton.on( 'keydown', function( e ) {
+					if ( e.key === "Enter" ) {
+						if ( timer ) {
+							clearTimeout( timer );
+						}
+						if ( ! $panel.hasClass( 'open-state' ) ) {
+							fixElementorContainerZIndex( $( this ) );
+							$panel.addClass( 'open-state' );
+							$html.addClass( 'jet-hamburger-panel-visible' );
+							JetBlocks.initAnimationsHandlers( $inner );
+
+							if ( settings['ajaxTemplate'] ) {
+								ajaxLoadTemplate( $panelContent, settings );
+							}
+						} else {
+							$panel.removeClass( 'open-state' );
+							$html.removeClass( 'jet-hamburger-panel-visible' );
+							timer = setTimeout( function() {
+								fixElementorContainerZIndex( $( this ), false );
+							}, 400 );
+						}
 					}
 				} );
 			}
 
 			$closeButton.on( 'click', function( event ) {
+				if ( timer ) {
+					clearTimeout( timer );
+				}
 
 				if ( ! $panel.hasClass( 'open-state' ) ) {
 					$panel.addClass( 'open-state' );
@@ -658,6 +735,9 @@
 				} else {
 					$panel.removeClass( 'open-state' );
 					$html.removeClass( 'jet-hamburger-panel-visible' );
+					timer = setTimeout( function() {
+						fixElementorContainerZIndex( $( this ), false );
+					}, 400 );
 				}
 			} );
 
@@ -854,11 +934,16 @@
 				initMobile:  false,
 
 				init: function() {
+					var _this = this;
+
 					if ( this.isEditMode ) {
 						return;
 					}
 
-					this.run();
+					$( document ).ready( function(){
+						_this.run();
+					} );
+
 					$( window ).on( 'resize.JetStickySection orientationchange.JetStickySection', this.run.bind( this ) );
 				},
 
@@ -1236,11 +1321,39 @@
 			function checkIfOneSpecialChar(text) {
 				return /[~`!#$%\^&*+=\-\[\]\\';,/{}|\\":<>\?]/g.test(text);
 			}
-
-			
 		}
 	};
 
 	$( window ).on( 'elementor/frontend/init', JetBlocks.init );
+
+	var JetBlocksTools = {
+
+		debounce: function( threshold, callback ) {
+			var timeout;
+
+			return function debounced( $event ) {
+				function delayed() {
+					callback.call( this, $event );
+					timeout = null;
+				}
+
+				if ( timeout ) {
+					clearTimeout( timeout );
+				}
+
+				timeout = setTimeout( delayed, threshold );
+			};
+		},
+		googleRecaptcha: function( $target ) {
+			if ( "true" === window.jetBlocksData.recaptchaConfig.enable && '' != window.jetBlocksData.recaptchaConfig.site_key && '' != window.jetBlocksData.recaptchaConfig.secret_key ) {
+				window.grecaptcha.ready( function() {
+					grecaptcha.execute( window.jetBlocksData.recaptchaConfig.site_key, { action: 'submit' }).then( function( token ) {
+						$target.append('<input type="hidden" name="token" value="' + token + '">');
+						$target.append('<input type="hidden" name="action" value="submit">');
+					} );
+				} );
+			}
+		}
+	}
 
 }( jQuery, window.elementorFrontend, window.elementor, window.JetHamburgerPanelSettings ) );

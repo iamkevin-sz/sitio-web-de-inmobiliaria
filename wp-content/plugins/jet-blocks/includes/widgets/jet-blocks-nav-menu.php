@@ -47,6 +47,25 @@ class Jet_Blocks_Nav_Menu extends Jet_Blocks_Base {
 
 	protected function register_controls() {
 
+		if ( \Elementor\Plugin::$instance->breakpoints && method_exists( \Elementor\Plugin::$instance->breakpoints, 'get_active_breakpoints')) {
+			$active_breakpoints  = \Elementor\Plugin::$instance->breakpoints->get_active_breakpoints();
+			$breakpoints_list    = array();
+			$exclude_breakpoints = array( 'widescreen', 'laptop' );
+
+			foreach ($active_breakpoints as $key => $value) {
+				if ( !in_array( $key, $exclude_breakpoints ) ) {
+					$breakpoints_list[$key] = $value->get_label();
+				}
+			}
+
+			$breakpoints_list = array_reverse( $breakpoints_list );
+		} else {
+			$breakpoints_list = array(
+				'tablet' => 'Tablet',
+				'mobile' => 'Mobile'
+			);
+		}
+
 		$this->start_controls_section(
 			'section_menu',
 			array(
@@ -168,9 +187,9 @@ class Jet_Blocks_Nav_Menu extends Jet_Blocks_Base {
 					),
 				),
 				'selectors_dictionary' => array(
-					'flex-start'    => 'justify-content: flex-start; text-align: left;',
+					'flex-start'    => ! is_rtl() ? 'justify-content: flex-start; text-align: left;' : 'justify-content: flex-end; text-align: right;',
 					'center'        => 'justify-content: center; text-align: center;',
-					'flex-end'      => 'justify-content: flex-end; text-align: right;',
+					'flex-end'      => ! is_rtl() ? 'justify-content: flex-end; text-align: right;' : 'justify-content: flex-start; text-align: left;',
 					'space-between' => 'justify-content: space-between; text-align: left;',
 				),
 				'selectors' => array(
@@ -178,7 +197,7 @@ class Jet_Blocks_Nav_Menu extends Jet_Blocks_Base {
 					'{{WRAPPER}} .jet-nav--vertical .menu-item-link-top' => '{{VALUE}}',
 					'{{WRAPPER}} .jet-nav--vertical-sub-bottom .menu-item-link-sub' => '{{VALUE}}',
 
-					'(mobile){{WRAPPER}} .jet-mobile-menu .menu-item-link' => '{{VALUE}}',
+					'{{WRAPPER}} .jet-mobile-menu.jet-mobile-menu-trigger-active .menu-item-link' => '{{VALUE}}',
 				),
 				'prefix_class' => 'jet-nav%s-align-',
 				'classes' => 'jet-blocks-text-align-control',
@@ -208,6 +227,23 @@ class Jet_Blocks_Nav_Menu extends Jet_Blocks_Base {
 				'type'      => Controls_Manager::SWITCHER,
 				'default'   => 'yes',
 				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'mobile_trigger_devices',
+			array(
+				'label'       => __( 'Start Showing Mobile Menu From', 'jet-blocks' ),
+				'type'        => Controls_Manager::SELECT,
+				'multiple'    => true,
+				'label_block' => 'true',
+				'default' => array(
+					'mobile',
+				),
+				'options'   => $breakpoints_list,
+				'condition' => array(
+					'mobile_trigger_visible' => 'yes',
+				),
 			)
 		);
 
@@ -680,7 +716,7 @@ class Jet_Blocks_Nav_Menu extends Jet_Blocks_Base {
 					'{{WRAPPER}} .menu-item-link-top .jet-nav-arrow' => ! is_rtl() ? 'margin-left: {{SIZE}}{{UNIT}};' : 'margin-right: {{SIZE}}{{UNIT}};',
 					'{{WRAPPER}} .jet-nav--vertical-sub-left-side .menu-item-link-top .jet-nav-arrow' => 'margin-right: {{SIZE}}{{UNIT}}; margin-left: 0;',
 
-					'(mobile){{WRAPPER}} .jet-mobile-menu .jet-nav--vertical-sub-left-side .menu-item-link-top .jet-nav-arrow' => 'margin-left: {{SIZE}}{{UNIT}}; margin-right: 0;',
+					'{{WRAPPER}} .jet-mobile-menu.jet-mobile-menu-trigger-active .jet-nav--vertical-sub-left-side .menu-item-link-top .jet-nav-arrow' => 'margin-left: {{SIZE}}{{UNIT}}; margin-right: 0;',
 				),
 			),
 			50
@@ -1103,7 +1139,7 @@ class Jet_Blocks_Nav_Menu extends Jet_Blocks_Base {
 					'{{WRAPPER}} .menu-item-link-sub .jet-nav-arrow' => ! is_rtl() ? 'margin-left: {{SIZE}}{{UNIT}};' : 'margin-right: {{SIZE}}{{UNIT}};',
 					'{{WRAPPER}} .jet-nav--vertical-sub-left-side .menu-item-link-sub .jet-nav-arrow' => 'margin-right: {{SIZE}}{{UNIT}}; margin-left: 0;',
 
-					'(mobile){{WRAPPER}} .jet-mobile-menu .jet-nav--vertical-sub-left-side .menu-item-link-sub .jet-nav-arrow' => 'margin-left: {{SIZE}}{{UNIT}}; margin-right: 0;',
+					'{{WRAPPER}} .jet-mobile-menu.jet-mobile-menu-trigger-active .jet-nav--vertical-sub-left-side .menu-item-link-sub .jet-nav-arrow' => 'margin-left: {{SIZE}}{{UNIT}}; margin-right: 0;',
 				),
 			),
 			50
@@ -1393,7 +1429,7 @@ class Jet_Blocks_Nav_Menu extends Jet_Blocks_Base {
 					),
 				),
 				'selectors' => array(
-					'(mobile){{WRAPPER}} .jet-nav' => 'width: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .jet-mobile-menu-trigger-active .jet-nav' => 'width: {{SIZE}}{{UNIT}};',
 				),
 				'condition' => array(
 					'mobile_menu_layout' => array(
@@ -1422,7 +1458,7 @@ class Jet_Blocks_Nav_Menu extends Jet_Blocks_Base {
 					),
 				),
 				'selectors' => array(
-					'(mobile){{WRAPPER}} .jet-nav' => 'max-height: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .jet-mobile-menu-trigger-active .jet-nav' => 'max-height: {{SIZE}}{{UNIT}};',
 				),
 				'condition' => array(
 					'mobile_menu_layout' => 'full-width',
@@ -1437,7 +1473,7 @@ class Jet_Blocks_Nav_Menu extends Jet_Blocks_Base {
 				'label' => esc_html__( 'Background color', 'jet-blocks' ),
 				'type'  => Controls_Manager::COLOR,
 				'selectors' => array(
-					'(mobile){{WRAPPER}} .jet-nav' => 'background-color: {{VALUE}};',
+					'{{WRAPPER}} .jet-mobile-menu-trigger-active .jet-nav' => 'background-color: {{VALUE}};',
 				),
 			),
 			25
@@ -1450,17 +1486,17 @@ class Jet_Blocks_Nav_Menu extends Jet_Blocks_Base {
 				'type'       => Controls_Manager::DIMENSIONS,
 				'size_units' => array( 'px', '%' ),
 				'selectors'  => array(
-					'(mobile){{WRAPPER}} .jet-nav' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+					'{{WRAPPER}} .jet-mobile-menu-trigger-active .jet-nav' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
 				),
 			),
 			25
 		);
-		
+
 		$this->__add_group_control(
 			Group_Control_Box_Shadow::get_type(),
 			array(
 				'name'     => 'mobile_menu_box_shadow',
-				'selector' => '(mobile){{WRAPPER}} .jet-mobile-menu-active .jet-nav',
+				'selector' => '{{WRAPPER}} .jet-mobile-menu-trigger-active.jet-mobile-menu-active .jet-nav',
 			),
 			75
 		);
@@ -1569,15 +1605,23 @@ class Jet_Blocks_Nav_Menu extends Jet_Blocks_Base {
 			return;
 		}
 
-		$trigger_visible = filter_var( $settings['mobile_trigger_visible'], FILTER_VALIDATE_BOOLEAN );
-		$trigger_align   = $settings['mobile_trigger_alignment'];
+		$trigger_visible       = filter_var( $settings['mobile_trigger_visible'], FILTER_VALIDATE_BOOLEAN );
+		$trigger_align         = $settings['mobile_trigger_alignment'];
+		$mobile_layout_device  = $settings['mobile_trigger_devices'];
+
+		if ( is_array( $mobile_layout_device ) ) {
+			$mobile_layout_device = $mobile_layout_device[0];
+		}
 
 		require_once jet_blocks()->plugin_path( 'includes/class-jet-blocks-nav-walker.php' );
 
 		$this->add_render_attribute( 'nav-wrapper', 'class', 'jet-nav-wrap' );
 
+		$this->add_render_attribute( 'nav-wrapper', 'class', 'm-layout-' . $mobile_layout_device );
+		
 		if ( $trigger_visible ) {
 			$this->add_render_attribute( 'nav-wrapper', 'class', 'jet-mobile-menu' );
+			$this->add_render_attribute( 'nav-wrapper', 'data-mobile-trigger-device', esc_attr( $mobile_layout_device ) );
 
 			if ( isset( $settings['mobile_menu_layout'] ) ) {
 				$this->add_render_attribute( 'nav-wrapper', 'class', sprintf( 'jet-mobile-menu--%s', esc_attr( $settings['mobile_menu_layout'] ) ) );
@@ -1586,6 +1630,8 @@ class Jet_Blocks_Nav_Menu extends Jet_Blocks_Base {
 		}
 
 		$this->add_render_attribute( 'nav-menu', 'class', 'jet-nav' );
+
+		$this->add_render_attribute( 'nav-menu', 'class', 'm-layout-' . $mobile_layout_device );
 
 		if ( isset( $settings['layout'] ) ) {
 			$this->add_render_attribute( 'nav-menu', 'class', 'jet-nav--' . esc_attr( $settings['layout'] ) );

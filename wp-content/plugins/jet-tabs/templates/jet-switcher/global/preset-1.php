@@ -9,8 +9,10 @@ $this->add_render_attribute( 'jet_switcher_control_disable', array(
 		'jet-switcher__control--disable',
 	),
 	'role'          => 'button',
+	'tabindex'      => 0,
 	'aria-controls' => 'jet-switcher-content-disable-' . $this->get_id(),
 	'aria-expanded' => ! $initial_state ? 'true' : 'false',
+	'aria-label'    => ! empty( $widget_settings['disable_label'] ) ? $widget_settings['disable_label'] : '',
 ) );
 
 $disable_label_html = ! empty( $widget_settings['disable_label'] ) ? sprintf( '<div class="jet-switcher__label-text">%1$s</div>', $widget_settings['disable_label'] ) : '';
@@ -21,8 +23,10 @@ $this->add_render_attribute( 'jet_switcher_control_enable', array(
 		'jet-switcher__control--enable',
 	),
 	'role'          => 'button',
+	'tabindex'      => 0,
 	'aria-controls' => 'jet-switcher-content-enable-' . $this->get_id(),
 	'aria-expanded' => $initial_state ? 'true' : 'false',
+	'aria-label'    => ! empty( $widget_settings['enable_label'] ) ? $widget_settings['enable_label'] : '',
 ) );
 
 $enable_label_html = ! empty( $widget_settings['disable_label'] ) ? sprintf( '<div class="jet-switcher__label-text">%1$s</div>', $widget_settings['enable_label'] ) : '';

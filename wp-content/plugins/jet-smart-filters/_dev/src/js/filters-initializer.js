@@ -65,6 +65,9 @@ function init() {
 	eventBus.channels = {};
 	filterGroups = filtersInitializer.filterGroups = {};
 
+	const beforeInitEvent = new Event('jet-smart-filters/before-init');
+	document.dispatchEvent(beforeInitEvent);
+
 	// if elementor
 	if (window.elementorFrontend) {
 		// initialize elementor PRO widgets post rendered processing
@@ -132,6 +135,9 @@ function init() {
 			filterGroups[filterGroupKey] = new FilterGroup(splittedKeys[0], splittedKeys[1], filterGroups[filterGroupKey], prevQueries[filterGroupKey]);
 		}
 	}
+
+	const initedEvent = new Event('jet-smart-filters/inited');
+	document.dispatchEvent(initedEvent);
 }
 
 function findFilters(container = $('html')) {

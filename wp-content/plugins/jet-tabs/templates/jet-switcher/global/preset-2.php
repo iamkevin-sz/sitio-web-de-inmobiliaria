@@ -9,6 +9,7 @@ $this->add_render_attribute( 'jet_switcher_control_disable', array(
 		'jet-switcher__control--disable',
 	),
 	'role'          => 'button',
+	'tabindex'      => 0,
 	'aria-controls' => 'jet-switcher-content-disable-' . $this->get_id(),
 	'aria-expanded' => ! $initial_state ? 'true' : 'false',
 ) );
@@ -21,6 +22,7 @@ $this->add_render_attribute( 'jet_switcher_control_enable', array(
 		'jet-switcher__control--enable',
 	),
 	'role'          => 'button',
+	'tabindex'      => 0,
 	'aria-controls' => 'jet-switcher-content-enable-' . $this->get_id(),
 	'aria-expanded' => $initial_state ? 'true' : 'false',
 ) );

@@ -1,4 +1,4 @@
-/*! elementor-pro - v3.10.2 - 17-01-2023 */
+/*! elementor-pro - v3.11.6 - 14-03-2023 */
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
@@ -2346,7 +2346,9 @@ const {
   useState
 } = _react.default;
 function SubmissionRow(props) {
+  var _props$item, _props$item$main;
   const [isMobileRowOpen, setIsMobileRowOpen] = useState(false);
+  const mainValue = ((_props$item = props.item) === null || _props$item === void 0 ? void 0 : (_props$item$main = _props$item.main) === null || _props$item$main === void 0 ? void 0 : _props$item$main.value) || __('Unknown', 'elementor-pro');
   return /*#__PURE__*/_react.default.createElement(_wpTable.default.Row, {
     className: isMobileRowOpen ? 'is-expanded' : '',
     style: {
@@ -2357,10 +2359,10 @@ function SubmissionRow(props) {
     className: "check-column"
   }, props.checkBoxComponent), /*#__PURE__*/_react.default.createElement(_wpTable.default.Cell, {
     className: "has-row-actions column-primary"
-  }, 'trash' === props.item.status ? props.item.main.value : /*#__PURE__*/_react.default.createElement(_link.default, {
+  }, 'trash' === props.item.status ? mainValue : /*#__PURE__*/_react.default.createElement(_link.default, {
     to: `/${props.item.id}`,
     "aria-label": "View"
-  }, props.item.main.value), props.rowActionComponent, /*#__PURE__*/_react.default.createElement("button", {
+  }, mainValue), props.rowActionComponent, /*#__PURE__*/_react.default.createElement("button", {
     type: "button",
     className: "toggle-row",
     onClick: () => setIsMobileRowOpen(prev => !prev)
@@ -4828,7 +4830,7 @@ const {
   useMemo
 } = _react.default;
 function Item(props) {
-  var _data$form2;
+  var _data$form2, _data$values;
   const [{
       data
     }, setFetchResult] = useState({
@@ -4945,7 +4947,7 @@ function Item(props) {
     }, isEditMode ? __('Cancel', 'elementor-pro') : __('Edit', 'elementor-pro')))
   }, /*#__PURE__*/_react.default.createElement(_wpTable.default, {
     className: "e-form-submissions-item-table"
-  }, /*#__PURE__*/_react.default.createElement(_wpTable.default.Body, null, data.values.map(value => {
+  }, /*#__PURE__*/_react.default.createElement(_wpTable.default.Body, null, ((_data$values = data.values) === null || _data$values === void 0 ? void 0 : _data$values.length) > 0 ? data.values.map(value => {
     var _fields$value$key;
     return /*#__PURE__*/_react.default.createElement(_wpTable.default.Row, {
       key: value.id
@@ -4961,7 +4963,9 @@ function Item(props) {
         [id]: fieldValue
       }))
     })));
-  }))))), data.form_actions_log && /*#__PURE__*/_react.default.createElement(_formActionsLog.default, {
+  }) : /*#__PURE__*/_react.default.createElement(_wpTable.default.Row, null, /*#__PURE__*/_react.default.createElement(_wpTable.default.Cell, {
+    colSpan: "2"
+  }, __('No data', 'elementor-pro'))))))), data.form_actions_log && /*#__PURE__*/_react.default.createElement(_formActionsLog.default, {
     actions: data.form_actions_log
   })), /*#__PURE__*/_react.default.createElement("div", {
     className: "postbox-container",

@@ -1,7 +1,7 @@
 <?php
 /**
  * Class: Jet_Image_Accordion_Widget
- * Name: Jet Image Accordion
+ * Name: Image Accordion
  * Slug: jet-image-accordion
  */
 
@@ -37,7 +37,7 @@ class Jet_Image_Accordion_Widget extends Jet_Tabs_Base {
 	}
 
 	public function get_categories() {
-		return array( 'cherry' );
+		return array( 'jet-tabs' );
 	}
 
 	public function get_script_depends() {
@@ -69,6 +69,8 @@ class Jet_Image_Accordion_Widget extends Jet_Tabs_Base {
 				'label' => esc_html__( 'Items', 'jet-tabs' ),
 			)
 		);
+
+		do_action( 'jet-engine-query-gateway/control', $this, 'item_list' );
 
 		$repeater = new Repeater();
 
@@ -175,6 +177,17 @@ class Jet_Image_Accordion_Widget extends Jet_Tabs_Base {
 			'section_settings',
 			array(
 				'label' => esc_html__( 'Settings', 'jet-tabs' ),
+			)
+		);
+
+		$this->add_control(
+			'item_html_tag',
+			array(
+				'label'       => esc_html__( 'HTML Tag', 'jet-tabs' ),
+				'description' => esc_html__( 'Select the HTML Tag for the Item\'s title', 'jet-tabs' ),
+				'type'        => Controls_Manager::SELECT,
+				'options'     => $this->get_available_item_html_tags(),
+				'default'     => 'h5',
 			)
 		);
 
@@ -1057,6 +1070,9 @@ class Jet_Image_Accordion_Widget extends Jet_Tabs_Base {
 			'elementor-size-md',
 			'jet-image-accordion__button',
 		) );
+
+		$this->add_render_attribute( $attr_name, 'role', 'button' );
+		$this->add_render_attribute( $attr_name, 'tabindex', 0 );
 
 		if ( is_array( $button_url ) ) {
 			if ( method_exists( $this, 'add_link_attributes' ) ) {

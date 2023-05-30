@@ -45,7 +45,11 @@ if ( ! class_exists( 'Jet_Tabs_Integration' ) ) {
 
 			add_action( 'elementor/elements/categories_registered', array( $this, 'register_category' ) );
 
-			add_action( 'elementor/widgets/widgets_registered', array( $this, 'register_addons' ), 10 );
+			if ( defined( 'ELEMENTOR_VERSION' ) && version_compare( ELEMENTOR_VERSION, '3.5.0', '>=' ) ) {
+				add_action( 'elementor/widgets/register', array( $this, 'register_addons' ), 10 );
+			} else {
+				add_action( 'elementor/widgets/widgets_registered', array( $this, 'register_addons' ), 10 );
+			}
 
 			add_action( 'elementor/controls/controls_registered', array( $this, 'add_controls' ), 10 );
 
@@ -204,7 +208,11 @@ if ( ! class_exists( 'Jet_Tabs_Integration' ) ) {
 			require $file;
 
 			if ( class_exists( $class ) ) {
-				$widgets_manager->register_widget_type( new $class );
+				if ( method_exists( $widgets_manager, 'register' ) ) {
+					$widgets_manager->register( new $class );
+				} else {
+					$widgets_manager->register_widget_type( new $class );
+				}
 			}
 		}
 
@@ -215,12 +223,12 @@ if ( ! class_exists( 'Jet_Tabs_Integration' ) ) {
 		 */
 		public function register_category( $elements_manager ) {
 
-			$cherry_cat       = 'cherry';
+			$cherry_cat = 'jet-tabs';
 
 			$elements_manager->add_category(
 				$cherry_cat,
 				array(
-					'title' => esc_html__( 'JetElements', 'jet-tabs' ),
+					'title' => esc_html__( 'JetTabs', 'jet-tabs' ),
 					'icon'  => 'font',
 				),
 				1

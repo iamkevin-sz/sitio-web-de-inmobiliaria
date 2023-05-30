@@ -77,14 +77,6 @@ if ( get_permalink( 0 ) === $redirect_page_url ) {
 			</p>
 
 			<p class="jet-reset__field">
-
-				<label for="jet_reset_new_user_pass_again"><?php echo $re_enter_password_label; ?></label>
-				<?php if ( ! empty( $minimum_password_length ) ) { ?>
-					<input name="jet_reset_new_user_pass_again" id="jet_reset_new_user_pass_again" class="input" type="password" pattern=".{<?php echo $minimum_password_length; ?>,}" required>
-				<?php } else { ?>
-					<input name="jet_reset_new_user_pass_again" id="jet_reset_new_user_pass_again" class="input" type="password" required>
-				<?php } ?>
-
 				<label for="jet_reset_new_user_pass_again"><?php echo $re_enter_password_label; ?></label>
 				<p class="jet-reset__field-wrapper">
 					<?php if ( ! empty( $minimum_password_length ) ) { ?>

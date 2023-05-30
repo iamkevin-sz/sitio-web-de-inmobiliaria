@@ -738,7 +738,7 @@ class Jet_Blocks_Hamburger_Panel extends Jet_Blocks_Base {
 			$toggle_label_html .= sprintf( '<div class="jet-hamburger-panel__toggle-label"><span>%1$s</span></div>', $panel_settings['panel_toggle_label'] );
 		}
 
-		$toggle_html = sprintf( '<div class="jet-hamburger-panel__toggle">%1$s%2$s</div>', $toggle_control_html, $toggle_label_html );
+		$toggle_html = sprintf( '<div class="jet-hamburger-panel__toggle" role="button" tabindex="0">%1$s%2$s</div>', $toggle_control_html, $toggle_label_html );
 
 		?>
 		<div <?php echo $this->get_render_attribute_string( 'instance' ); ?>>

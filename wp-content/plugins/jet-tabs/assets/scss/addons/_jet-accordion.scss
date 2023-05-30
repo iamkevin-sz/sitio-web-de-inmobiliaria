@@ -41,6 +41,7 @@
 
 		> .jet-toggle__content {
 			height: auto;
+			visibility: visible;
 		}
 	}
 
@@ -107,6 +108,7 @@
 		height: 0;
 		overflow: hidden;
 		transition: height 0.5s ease;
+		visibility: hidden;
 
 		.jet-toggle:not(.active-toggle) > & {
 			padding: 0 !important;

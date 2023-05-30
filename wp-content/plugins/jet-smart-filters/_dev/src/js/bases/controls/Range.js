@@ -45,14 +45,18 @@ export default class RangeControl extends Filter {
 		});
 
 		if (this.$rangeInputMin.length)
-			this.$rangeInputMin.on('change', (event) => {
+			this.$rangeInputMin.on('input keydown blur', (event) => {
 				this.minVal = this.inputNumberRangeValidation(parseFloat(this.$rangeInputMin.val())) || this.minConstraint;
-				this.valuesUpdated('min');
+
+				if (event.type === 'blur' || event.keyCode === 13)
+					this.valuesUpdated('min');
 			});
 		if (this.$rangeInputMax.length)
-			this.$rangeInputMax.on('change', (event) => {
+			this.$rangeInputMax.on('input keydown blur', (event) => {
 				this.maxVal = this.inputNumberRangeValidation(parseFloat(this.$rangeInputMax.val())) || this.maxConstraint;
-				this.valuesUpdated('max');
+
+				if (event.type === 'blur' || event.keyCode === 13)
+					this.valuesUpdated('max');
 			});
 	}
 

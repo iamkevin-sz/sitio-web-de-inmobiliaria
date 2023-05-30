@@ -617,7 +617,7 @@ abstract class Jet_Tabs_Base extends Widget_Base {
 
 		if ( $is_new || $migrated ) {
 
-			$attr = array( 'aria-hidden' => 'true' );
+			$attr = array();
 
 			if ( ! empty( $icon_class ) ) {
 				$attr['class'] = $icon_class;

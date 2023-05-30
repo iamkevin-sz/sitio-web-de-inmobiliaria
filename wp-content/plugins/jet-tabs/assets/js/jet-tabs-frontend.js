@@ -80,6 +80,38 @@
 				addMouseEvent();
 			}
 
+			var currentActiveContent = $contentList.eq( [settings['activeIndex']] ),
+				currentActiveContentHeight = currentActiveContent.outerHeight( true );
+
+			if ( 'yes' != settings['no_active_tabs'] ) {
+				currentActiveContentHeight += parseInt( $contentWrapper.css( 'border-top-width' ) ) + parseInt( $contentWrapper.css( 'border-bottom-width' ) );
+				$contentWrapper.css( 'min-height', currentActiveContentHeight );
+			}
+
+			if ( 'left' !== $tabsPositionBreakpoints[currentDeviceMode] && 'right' !== $tabsPositionBreakpoints[currentDeviceMode] ) {
+				var observerConfig = {childList: true, subtree: true },
+					observerTarget = $( ".jet-tabs__content.active-content", $scope );
+
+				if ( observerTarget[0] ) {
+					var observerCallback = ( mutationList, observer ) => {
+						for ( var mutation of mutationList ) {
+							if ( mutation.type === 'childList' ) {
+								observerTarget.closest( '.jet-tabs__content-wrapper' ).css( 'min-height', 'auto' );
+
+								var activeContentHeight = observerTarget.outerHeight( true );
+
+								activeContentHeight += parseInt( observerTarget.css( 'border-top-width' ) ) + parseInt( observerTarget.css( 'border-bottom-width' ) );
+								observerTarget.closest( '.jet-tabs__content-wrapper' ).css( 'min-height', activeContentHeight );
+							}
+						}
+					};
+
+					var observer = new MutationObserver( observerCallback );
+
+					observer.observe( observerTarget[0], observerConfig );
+				}
+			}
+
 			if ( settings['autoSwitch'] ) {
 
 				var startIndex        = settings['activeIndex'],
@@ -180,6 +212,54 @@
 				}
 			}
 
+			$( '.jet-tabs__control', $scope ).keydown( function( e ) {
+				var $this  = $( this ),
+					$which = e.which || e.keyCode;
+
+					if ( $which == 13 || $which == 32 ) {
+						if ( !$this.hasClass( 'active-tab' ) ) {
+							$this.click();
+							return false;
+						}
+					}
+
+					if ( $which == 37 ) {
+						var prevTabId  = $this.prev().data('tab'),
+							templateId = $this.prev().data( 'template-id' );
+
+						if ( undefined != prevTabId ) {
+							clearInterval( autoSwitchInterval );
+
+							if ( settings['ajaxTemplate'] && templateId ) {
+								ajaxLoadTemplate( prevTabId - 1 );
+							}
+
+							switchTab( prevTabId - 1);
+							$this.prev().focus();
+						} else {
+							$this.focus();
+						}
+					}
+
+					if ( $which == 39 ) {
+						var nextTabId  = $this.next().data('tab'),
+							templateId = $this.next().data( 'template-id' );
+
+						if ( undefined != nextTabId ) {
+							clearInterval( autoSwitchInterval );
+
+							if ( settings['ajaxTemplate'] && templateId ) {
+								ajaxLoadTemplate( nextTabId - 1 );
+							}
+
+							switchTab( nextTabId - 1 );
+							$this.next().focus();
+						} else {
+							$this.focus();
+						}
+					}
+			} );
+
 			/**
 			 * [switchTab description]
 			 * @param  {[type]} curentIndex [description]
@@ -192,7 +272,7 @@
 					timer,
 					$controlWrapperHeight = $controlWrapper.outerHeight( true ),
 					currentDeviceMode     = elementorFrontend.getCurrentDeviceMode(),
-					scrollingDeviceArray  = [ 'tablet_extra', 'tablet', 'mobile_extra', 'mobile'];
+					controlsHeight        = 0;
 
 				$controlList.removeClass( 'active-tab' );
 				$activeControl.addClass( 'active-tab' );
@@ -201,8 +281,17 @@
 				$activeControl.attr( 'aria-expanded', 'true' );
 
 				$contentList.removeClass( 'active-content' );
+
+				if ( $controlWrapper.css( 'align-self' ) === 'stretch' ) {
+					( '.jet-tabs__control', $controlWrapper ).each( function(){
+						controlsHeight += $( this ).outerHeight( true );
+					} );
+					$controlWrapperHeight = controlsHeight;
+				}
+
 				activeContentHeight = $activeContent.outerHeight( true );
 				activeContentHeight += parseInt( $contentWrapper.css( 'border-top-width' ) ) + parseInt( $contentWrapper.css( 'border-bottom-width' ) );
+
 				$activeContent.addClass( 'active-content' );
 
 				$contentList.attr( 'aria-hidden', 'true' );
@@ -210,12 +299,34 @@
 
 				if ( 'left' === $tabsPositionBreakpoints[currentDeviceMode] || 'right' === $tabsPositionBreakpoints[currentDeviceMode] ) {
 					if ( activeContentHeight < $controlWrapperHeight ) {
-						$contentWrapper.css( { 'height': $controlWrapperHeight } );
-					} else if ( activeContentHeight > $contentWrapper.outerHeight( true ) ){
-						$contentWrapper.css( { 'height': activeContentHeight } );
+						$target.css( { 'min-height': 'auto' } );
+						$contentWrapper.css( { 'min-height': $controlWrapperHeight } );
+						$target.css( { 'min-height': $controlWrapperHeight } );
+					} else if ( activeContentHeight < $contentWrapper.outerHeight( true ) ){
+						$contentWrapper.css( { 'min-height': activeContentHeight } );
+						$target.css( { 'min-height': activeContentHeight } );
 					}
 				} else {
-					$contentWrapper.css( { 'height': activeContentHeight } );
+					$contentWrapper.css( { 'min-height': activeContentHeight } );
+
+					var observerConfig = { childList: true, subtree: true },
+						observerTarget = $contentWrapper;
+
+					if ( observerTarget[0] ) {
+						var observerCallback = ( mutationList, observer ) => {
+							for ( var mutation of mutationList ) {
+								if ( mutation.type === 'childList' ) {
+									activeContentHeight = $activeContent.outerHeight( true );
+									activeContentHeight += parseInt( $contentWrapper.css( 'border-top-width' ) ) + parseInt( $contentWrapper.css( 'border-bottom-width' ) );
+									$contentWrapper.css( { 'min-height': activeContentHeight } );
+								}
+							}
+						};
+
+						var observer = new MutationObserver( observerCallback );
+
+						observer.observe( observerTarget[0], observerConfig );
+					}
 				}
 
 				$window.trigger( 'jet-tabs/tabs/show-tab-event/before', {
@@ -233,11 +344,9 @@
 						tabIndex: curentIndex,
 					} );
 
-					$contentWrapper.css( { 'height': 'auto' } );
-
-					if ( scrollingDeviceArray.includes( currentDeviceMode ) && true === settings['switchScrolling'] ) {
+					if ( true === settings['switchScrolling'] ) {
 						$( 'html, body' ).animate( {
-							scrollTop: $contentWrapper.offset().top
+							scrollTop: $contentWrapper.offset().top - settings['switchScrollingOffset']['size']
 						}, 300 );
 					}
 				}, 500 );
@@ -378,6 +487,44 @@
 				$contentWrapper.css( { 'height': 'auto' } );
 			} );
 
+			$( '.jet-switcher__control', $scope ).keydown( function( e ) {
+				var $this  = $( this ),
+					$which = e.which || e.keyCode;
+
+				if ( $which == 13 || $which == 32 ) {
+					switchTab();
+					$( '[aria-expanded="true"]', $scope ).focus();
+				}
+
+				if ( $which == 37 ) {
+					if ( 0 != $this.prev().length && $this.prev().hasClass( 'jet-switcher__control' ) && $target.hasClass( 'jet-switcher--preset-1' ) ) {
+						$this.prev().focus();
+						switchTab();
+					} else if ( $target.hasClass( 'jet-switcher--preset-2' ) ) {
+						if ( $this.hasClass( 'jet-switcher__control--disable' ) ) {
+							return false;
+						} else if ( $this.hasClass( 'jet-switcher__control--enable' ) ) {
+							$( '.jet-switcher__control--disable', $scope ).focus();
+							switchTab();
+						}
+					}
+				}
+
+				if ( $which == 39 ) {
+					if ( 0 != $this.next().length && $this.next().hasClass( 'jet-switcher__control' ) && $target.hasClass( 'jet-switcher--preset-1' ) ) {
+						$this.next().focus();
+						switchTab();
+					} else if ( $target.hasClass( 'jet-switcher--preset-2' ) ) {
+						if ( $this.hasClass( 'jet-switcher__control--disable' ) ) {
+							$( '.jet-switcher__control--enable', $scope ).focus();
+							switchTab();
+						} else if ( $this.hasClass( 'jet-switcher__control--enable' ) ) {
+							return false;
+						}
+					}
+				}
+			} );
+
 			function addClickEvent() {
 				$controlInstance.on( 'click.jetSwitcher', function() {
 					switchTab();
@@ -461,8 +608,7 @@
 				anchorSelectors      = [],
 				timer, timer2,
 				curentHash           = window.location.hash || false,
-				togglesArray         = curentHash ? curentHash.replace( '#', '' ).split( '&' ) : false,
-				scrollingDeviceArray = [ 'tablet_extra', 'tablet', 'mobile_extra', 'mobile'];
+				togglesArray         = curentHash ? curentHash.replace( '#', '' ).split( '&' ) : false;
 
 			$toggleList.each( function() {
 				if ( $( this ).hasClass( 'active-toggle' ) && settings['ajaxTemplate'] ) {
@@ -471,11 +617,34 @@
 				}
 			} );
 
+
 			$( window ).on( 'resize.jetAccordion orientationchange.jetAccordion', function() {
 				var activeToggle        = $( '> .jet-accordion__inner > .active-toggle', $target ),
 					activeToggleContent = $( '> .jet-toggle__content', activeToggle );
 
 				activeToggleContent.css( { 'height': 'auto' } );
+			} );
+
+			$( '.jet-toggle__control', $scope ).keydown( function( e ) {
+				var $this   = $( this ),
+					$which  = e.which || e.keyCode;
+
+				if ( $which == 13 || $which == 32 ) {
+					$this.click();
+					return false;
+				}
+
+				if ( $which == 37 ) {
+					if ( 0 != $this.closest( '.jet-accordion__item' ).prev().length ) {
+						$this.closest( '.jet-accordion__item' ).prev().find( '.jet-toggle__control' ).focus();
+					}
+				}
+
+				if ( $which == 39 ) {
+					if ( 0 != $this.closest( '.jet-accordion__item' ).next().length ) {
+						$this.closest( '.jet-accordion__item' ).next().find( '.jet-toggle__control' ).focus();
+					}
+				}
 			} );
 
 			$controlsList.on( 'click.jetAccordion', function() {
@@ -501,7 +670,6 @@
 								$toggleContent.css( { 'height': $toggleContentHeight } );
 
 								$toggleControl.attr( 'aria-expanded', 'true' );
-								$toggleContent.attr( 'aria-hidden', 'false' );
 
 								if ( settings['ajaxTemplate'] ) {
 									ajaxLoadTemplate( toggleIndex );
@@ -517,6 +685,7 @@
 								}
 
 								timer = setTimeout( function() {
+
 									$window.trigger( 'jet-tabs/accordion/show-toggle-event/after', {
 										target: $target,
 										toggleIndex: toggleIndex,
@@ -524,12 +693,12 @@
 
 									$toggleContent.css( { 'height': 'auto' } );
 
-									if ( scrollingDeviceArray.includes( currentDeviceMode ) && true === settings['switchScrolling'] ) {
+									if ( true === settings['switchScrolling'] ) {
 										$( 'html, body' ).animate( {
-											scrollTop: $toggleContent.offset().top
+											scrollTop: $this.offset().top - settings['switchScrollingOffset']['size']
 										}, 300 );
 									}
-								}, 300 );
+								}, 500 );
 
 							} else {
 								if ( $this.hasClass( 'active-toggle' ) ) {
@@ -537,7 +706,6 @@
 									$this.removeClass( 'active-toggle' );
 
 									$toggleControl.attr( 'aria-expanded', 'false' );
-									$toggleContent.attr( 'aria-hidden', 'true' );
 
 									if ( timer2 ) {
 										clearTimeout( timer2 );
@@ -562,7 +730,6 @@
 						$toggleContent.css( { 'height': $toggleContentHeight } );
 
 						$this.attr( 'aria-expanded', 'true' );
-						$toggleContent.attr( 'aria-hidden', 'false' );
 
 						if ( settings['ajaxTemplate'] ) {
 							ajaxLoadTemplate( toggleIndex );
@@ -585,18 +752,17 @@
 
 							$toggleContent.css( { 'height': 'auto' } );
 
-							if ( scrollingDeviceArray.includes( currentDeviceMode ) && true === settings['switchScrolling'] ) {
+							if ( true === settings['switchScrolling'] ) {
 								$( 'html, body' ).animate( {
-									scrollTop: $toggleContent.offset().top
+									scrollTop: $this.offset().top - settings['switchScrollingOffset']['size']
 								}, 300 );
 							}
-						}, 300 );
+						}, 500 );
 
 					} else {
 						$toggleContent.css( { 'height': $toggleContent.outerHeight() } );
 
 						$this.attr( 'aria-expanded', 'false' );
-						$toggleContent.attr( 'aria-hidden', 'true' );
 
 						if ( timer2 ) {
 							clearTimeout( timer2 );
@@ -978,6 +1144,46 @@
 					}
 
 					self.layoutRender();
+				} );
+
+				$( '.jet-image-accordion__item', $instance ).keydown( function( e ) {
+					var $this  = $( this ),
+						$which = e.which || e.keyCode;
+	
+						if ( $which == 13 || $which == 32 ) {
+							if ( ! $this.hasClass( 'active-accordion' ) ) {
+								$itemsList.removeClass( 'active-accordion' );
+								$this.addClass( 'active-accordion' );
+							} else {
+								$itemsList.removeClass( 'active-accordion' );
+
+								if ( -1 !== activeItem ) {
+									$itemsList.eq( activeItem ).addClass( 'active-accordion' );
+								}
+
+								self.layoutRender();
+							}
+		
+							self.layoutRender();
+						}
+
+						if ( $which == 37 ) {
+							if ( 0 != $this.prev().length ) {
+								$itemsList.removeClass( 'active-accordion' );
+								$this.prev().focus();
+								$this.prev().addClass( 'active-accordion' );
+								self.layoutRender();
+							}
+						}
+	
+						if ( $which == 39 ) {
+							if ( 0 != $this.next().length ) {
+								$itemsList.removeClass( 'active-accordion' );
+								$this.next().focus();
+								$this.next().addClass( 'active-accordion' );
+								self.layoutRender();
+							}
+						}
 				} );
 			}
 

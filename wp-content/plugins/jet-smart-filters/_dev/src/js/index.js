@@ -1,7 +1,7 @@
 import filtersInitializer from './filters-initializer';
 
 // Includes
-import elementorEditorMode from 'includes/elementor-editor-mode';
+import editorMode from 'includes/elementor-editor-mode';
 
 "use strict";
 
@@ -17,7 +17,7 @@ $(document).ready(function () {
 $(window).on('elementor/frontend/init', function () {
 	// edit mode filters init
 	if (elementorFrontend.isEditMode())
-		elementorEditorMode.initFilters();
+		editorMode.initFilters();
 });
 
 // Reinit filters events
@@ -36,3 +36,27 @@ $(window)
 $(document).on('elementor/popup/show', (event, id, instance) => {
 	window.JetSmartFilters.initializeFiltersInContainer(instance.$element);
 });
+// For Elementor pro version > 3.9.0
+window.addEventListener( 'elementor/popup/show', ( event )=>{
+	const id = event.detail.id;
+	const instance = event.detail.instance;
+	
+	window.JetSmartFilters.initializeFiltersInContainer(instance.$element);
+});
+
+window.JetSmartFiltersBricksInit = function() {
+	if ( ! window.bricksIsFrontend ) {
+		
+		const $body = jQuery( 'body' );
+
+		editorMode.checkboxes( $body );
+		editorMode.radio( $body );
+		editorMode.range( $body );
+		editorMode.dateRange( $body );
+		editorMode.datePeriod( $body );
+
+	}
+}
+
+// Extensions
+import './extensions';

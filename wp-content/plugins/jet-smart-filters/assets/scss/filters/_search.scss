@@ -36,11 +36,6 @@
 				&::before {
 					content: "\f00d";
 				}
-
-				.rtl & {
-					right: initial;
-					left: 5px;
-				}
 			}
 
 			&-loading {
@@ -54,11 +49,6 @@
 				border-bottom: 3px solid currentColor;
 				border-radius: 50%;
 				animation: loading-spin 1s infinite linear;
-
-				.rtl & {
-					right: initial;
-					left: 6px;
-				}
 
 				@keyframes loading-spin {
 					from {
@@ -100,6 +90,34 @@
 		.jet-search-filter__input::-webkit-search-results-button,
 		.jet-search-filter__input::-webkit-search-results-decoration {
 			display: none;
+		}
+	}
+}
+
+// Context Bricks
+.brxe-jet-smart-filters-search {
+	.jet-search-filter {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.jet-search-filter__submit {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		white-space: nowrap;
+	}
+
+	.jet-search-filter__submit-icon {
+		display: inline-flex;
+
+		svg {
+			width: 1em;
+			height: 1em;
+		}
+
+		svg, path {
+			fill: currentColor;
 		}
 	}
 }

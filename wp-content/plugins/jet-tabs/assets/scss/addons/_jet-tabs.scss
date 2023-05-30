@@ -21,6 +21,10 @@
 		outline: none;
 		flex-grow: inherit;
 
+		&:focus-visible {
+			outline: auto;
+		}
+
 		&.jet-tabs__control-icon-left {
 			> .jet-tabs__control-inner {
 				flex-flow: row nowrap;

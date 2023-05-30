@@ -1,7 +1,7 @@
 <?php
 /**
  * Class: Jet_Tabs_Widget
- * Name: Jet Tabs
+ * Name: Tabs
  * Slug: jet-tabs
  */
 
@@ -38,7 +38,7 @@ class Jet_Tabs_Widget extends Jet_Tabs_Base {
 	}
 
 	public function get_categories() {
-		return array( 'cherry' );
+		return array( 'jet-tabs' );
 	}
 
 	protected function register_controls() {
@@ -61,6 +61,8 @@ class Jet_Tabs_Widget extends Jet_Tabs_Base {
 				'label' => esc_html__( 'Items', 'jet-tabs' ),
 			)
 		);
+
+		do_action( 'jet-engine-query-gateway/control', $this, 'tabs' );
 
 		$repeater = new Repeater();
 
@@ -295,12 +297,13 @@ class Jet_Tabs_Widget extends Jet_Tabs_Base {
 		$this->add_control(
 			'no_active_tabs',
 			array(
-				'label'        => esc_html__( 'No Active Tabs', 'jet-tabs' ),
-				'type'         => Controls_Manager::SWITCHER,
-				'label_on'     => esc_html__( 'On', 'jet-tabs' ),
-				'label_off'    => esc_html__( 'Off', 'jet-tabs' ),
-				'return_value' => 'yes',
-				'default'      => 'false',
+				'label'              => esc_html__( 'No Active Tabs', 'jet-tabs' ),
+				'type'               => Controls_Manager::SWITCHER,
+				'label_on'           => esc_html__( 'On', 'jet-tabs' ),
+				'label_off'          => esc_html__( 'Off', 'jet-tabs' ),
+				'return_value'       => 'yes',
+				'default'            => 'false',
+				'frontend_available' => true,
 			)
 		);
 
@@ -320,12 +323,33 @@ class Jet_Tabs_Widget extends Jet_Tabs_Base {
 			'tab_control_switching',
 			array(
 				'label'        => esc_html__( 'Scrolling to the Content', 'jet-tabs' ),
-				'description'  => esc_html__( 'Scrolling to the Content after Switching Tab Control on Mobile Devices', 'jet-tabs' ),
+				'description'  => esc_html__( 'Scrolling to the Content after Switching Tab Control', 'jet-tabs' ),
 				'type'         => Controls_Manager::SWITCHER,
 				'label_on'     => esc_html__( 'On', 'jet-tabs' ),
 				'label_off'    => esc_html__( 'Off', 'jet-tabs' ),
 				'return_value' => 'yes',
 				'default'      => 'false',
+			)
+		);
+
+		$this->add_control(
+			'tab_control_switching_offset',
+			array(
+				'label' => esc_html__( 'Scrolling offset (px)', 'jet-tabs' ),
+				'type'  => Controls_Manager::SLIDER,
+				'range' => array(
+					'px' => array(
+						'min' => 0,
+						'max' => 100,
+					),
+				),
+				'default' => array(
+					'unit' => 'px',
+					'size' => 0,
+				),
+				'condition' => array(
+					'tab_control_switching' => 'yes'
+				)
 			)
 		);
 
@@ -1303,6 +1327,74 @@ class Jet_Tabs_Widget extends Jet_Tabs_Base {
 		$this->__end_controls_section();
 	}
 
+	public function get_tab_item_content( $item = array(), $index = 0, $args = array() ) {
+
+		$tab_count = $index + 1;
+		$tab_content_setting_key = $this->get_repeater_setting_key( 'tab_content', 'tabs', $index );
+		$id_int = $args['id_int'];
+		$active_index = $args['active_index'];
+		$no_active_tabs = $args['no_active_tabs'];
+		$ajax_template = $args['ajax_template'];
+
+		$this->add_render_attribute( $tab_content_setting_key, array(
+			'id'               => 'jet-tabs-content-' . $id_int . $tab_count,
+			'class'            => array(
+				'jet-tabs__content',
+				( $index === $active_index && ! $no_active_tabs ) ? 'active-content' : '',
+			),
+			'data-tab'         => $tab_count,
+			'role'             => 'tabpanel',
+			'aria-hidden'      => $index === $active_index ? 'false' : 'true',
+			'data-template-id' => ! empty( $item['item_template_id'] ) ? $item['item_template_id'] : 'false',
+		) );
+
+		$content_html = '';
+
+		switch ( $item[ 'content_type' ] ) {
+			case 'template':
+
+				if ( ! empty( $item['item_template_id'] ) ) {
+
+					// for multi-language plugins
+					$template_id = apply_filters( 'jet-tabs/widgets/template_id', $item['item_template_id'], $this );
+
+					$template_content = jet_tabs()->elementor()->frontend->get_builder_content_for_display( $template_id );
+
+					if ( ! empty( $template_content ) ) {
+
+						if ( ! $ajax_template ) {
+							$content_html .= $template_content;
+						} else {
+							$content_html .= '<div class="jet-tabs-loader"></div>';
+						}
+
+						if ( jet_tabs_integration()->is_edit_mode() ) {
+							$link = add_query_arg(
+								array(
+									'elementor' => '',
+								),
+								get_permalink( $item['item_template_id'] )
+							);
+
+							$content_html .= sprintf( '<div class="jet-tabs__edit-cover" data-template-edit-link="%s"><i class="fas fa-pencil-alt"></i><span>%s</span></div>', $link, esc_html__( 'Edit Template', 'jet-tabs' ) );
+						}
+					} else {
+						$content_html = $this->no_template_content_message();
+					}
+				} else {
+					$content_html = $this->no_templates_message();
+				}
+			break;
+
+			case 'editor':
+				$content_html = $this->parse_text_editor( $item['item_editor_content'] );
+			break;
+		}
+
+		return sprintf( '<div %1$s>%2$s</div>', $this->get_render_attribute_string( $tab_content_setting_key ), $content_html );
+
+	}
+
 	/**
 	 * [render description]
 	 * @return [type] [description]
@@ -1347,13 +1439,14 @@ class Jet_Tabs_Widget extends Jet_Tabs_Base {
 		}
 
 		$settings = array(
-			'activeIndex'     => ! $no_active_tabs ? $active_index : -1,
-			'event'           => $this->get_settings( 'tabs_event' ),
-			'autoSwitch'      => filter_var( $this->get_settings( 'auto_switch' ), FILTER_VALIDATE_BOOLEAN ),
-			'autoSwitchDelay' => $this->get_settings( 'auto_switch_delay' ),
-			'ajaxTemplate'    => $ajax_template,
-			'tabsPosition'    => $tabs_position,
-			'switchScrolling' => filter_var( $this->get_settings( 'tab_control_switching' ), FILTER_VALIDATE_BOOLEAN )
+			'activeIndex'           => ! $no_active_tabs ? $active_index : -1,
+			'event'                 => $this->get_settings( 'tabs_event' ),
+			'autoSwitch'            => filter_var( $this->get_settings( 'auto_switch' ), FILTER_VALIDATE_BOOLEAN ),
+			'autoSwitchDelay'       => $this->get_settings( 'auto_switch_delay' ),
+			'ajaxTemplate'          => $ajax_template,
+			'tabsPosition'          => $tabs_position,
+			'switchScrolling'       => filter_var( $this->get_settings( 'tab_control_switching' ), FILTER_VALIDATE_BOOLEAN ),
+			'switchScrollingOffset' => ! empty( $this->get_settings_for_display( 'tab_control_switching_offset' ) ) ? $this->get_settings_for_display( 'tab_control_switching_offset' ) : 0
 		);
 
 		$this->add_render_attribute( 'instance', array(
@@ -1367,11 +1460,16 @@ class Jet_Tabs_Widget extends Jet_Tabs_Base {
 			'role'          => 'tablist',
 		) );
 
+		$tabs_content = array();
+
 		?>
 		<div <?php echo $this->get_render_attribute_string( 'instance' ); ?>>
 			<div class="jet-tabs__control-wrapper">
 				<?php
 					foreach ( $tabs as $index => $item ) {
+
+						do_action( 'jet-engine-query-gateway/do-item', $item );
+
 						$tab_count = $index + 1;
 						$tab_title_setting_key = $this->get_repeater_setting_key( 'jet_tab_control', 'tabs', $index );
 						$tab_control_id = ! empty( $item['control_id'] ) ? esc_attr( $item['control_id'] ) : 'jet-tabs-control-' . $id_int . $tab_count;
@@ -1385,7 +1483,7 @@ class Jet_Tabs_Widget extends Jet_Tabs_Base {
 								( $index === $active_index && ! $no_active_tabs ) ? 'active-tab' : '',
 							),
 							'data-tab'         => $tab_count,
-							'tabindex'         => $id_int . $tab_count,
+							'tabindex'         => 0,
 							'role'             => 'tab',
 							'aria-controls'    => 'jet-tabs-content-' . $id_int . $tab_count,
 							'aria-expanded'    => $index === $active_index ? 'true' : 'false',
@@ -1421,71 +1519,23 @@ class Jet_Tabs_Widget extends Jet_Tabs_Base {
 								$title_label_html
 							);
 						}
+
+						$tabs_content[] = $this->get_tab_item_content( $item, $index, array(
+							'id_int' => $id_int,
+							'active_index' => $active_index,
+							'no_active_tabs' => $no_active_tabs,
+							'ajax_template' => $ajax_template,
+						) );
+
 					}
+
+					do_action( 'jet-engine-query-gateway/reset-item' );
 				?>
 			</div>
 			<div class="jet-tabs__content-wrapper">
 				<?php
-					foreach ( $tabs as $index => $item ) {
-						$tab_count = $index + 1;
-						$tab_content_setting_key = $this->get_repeater_setting_key( 'tab_content', 'tabs', $index );
-
-						$this->add_render_attribute( $tab_content_setting_key, array(
-							'id'               => 'jet-tabs-content-' . $id_int . $tab_count,
-							'class'            => array(
-								'jet-tabs__content',
-								( $index === $active_index && ! $no_active_tabs ) ? 'active-content' : '',
-							),
-							'data-tab'         => $tab_count,
-							'role'             => 'tabpanel',
-							'aria-hidden'      => $index === $active_index ? 'false' : 'true',
-							'data-template-id' => ! empty( $item['item_template_id'] ) ? $item['item_template_id'] : 'false',
-						) );
-
-						$content_html = '';
-
-						switch ( $item[ 'content_type' ] ) {
-							case 'template':
-
-								if ( ! empty( $item['item_template_id'] ) ) {
-
-									// for multi-language plugins
-									$template_id = apply_filters( 'jet-tabs/widgets/template_id', $item['item_template_id'], $this );
-
-									$template_content = jet_tabs()->elementor()->frontend->get_builder_content_for_display( $template_id );
-
-									if ( ! empty( $template_content ) ) {
-
-										if ( ! $ajax_template ) {
-											$content_html .= $template_content;
-										} else {
-											$content_html .= '<div class="jet-tabs-loader"></div>';
-										}
-
-										if ( jet_tabs_integration()->is_edit_mode() ) {
-											$link = add_query_arg(
-												array(
-													'elementor' => '',
-												),
-												get_permalink( $item['item_template_id'] )
-											);
-
-											$content_html .= sprintf( '<div class="jet-tabs__edit-cover" data-template-edit-link="%s"><i class="fas fa-pencil-alt"></i><span>%s</span></div>', $link, esc_html__( 'Edit Template', 'jet-tabs' ) );
-										}
-									} else {
-										$content_html = $this->no_template_content_message();
-									}
-								} else {
-									$content_html = $this->no_templates_message();
-								}
-							break;
-
-							case 'editor':
-								$content_html = $this->parse_text_editor( $item['item_editor_content'] );
-							break;
-						}
-
-						echo sprintf( '<div %1$s>%2$s</div>', $this->get_render_attribute_string( $tab_content_setting_key ), $content_html );
+					foreach ( $tabs_content as $index => $tab ) {
+						echo $tab;
 					}
 				?>
 			</div>
